@@ -1,4 +1,18 @@
-from sqlalchemy import Column, Date, DateTime, ForeignKey, Index, Integer, MetaData, String, Table, Boolean, UniqueConstraint
+# Copyright (c) 2024 AlgebraAI All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from sqlalchemy import Column, Date, DateTime, ForeignKey, Index, Integer, MetaData, String, Table, Boolean, UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.orm import registry, relationship, composite
 from sqlalchemy.dialects.postgresql import ARRAY, JSON
 
@@ -6,6 +20,7 @@ from metadata.core.domain.app import App, AppId, AppsflyerCostETLIntegration, Ap
 from metadata.core.domain.event import AtomicParameter, CommonEvent, Event, EventContext
 from metadata.core.domain.schema import ParameterType, RawSchema, Schema, SchemaParameter
 from metadata.core.domain.status import Status
+from metadata.core.domain.user_history import MaterializedColumn
 
 metadata = MetaData()
 mapper_registry = registry()
@@ -196,6 +211,29 @@ store_google_play_table = Table(
     Column("report_bucket_name", String, nullable=False),
 )
 
+user_history_materialized_column = Table(
+    "user_history_materialized_column",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("column_name", String, nullable=False),
+    Column("app_id", String, nullable=False),
+    Column("datasource_id", nullable=False),
+    Column("event_id", Integer, ForeignKey("event.id"), nullable=False),
+    Column("select_expression", String, nullable=False),
+    Column("data_type", String, nullable=False),
+    Column("user_history_formula", String, nullable=True),
+    Column("totals", Boolean, nullable=True, default=True),
+    Column("can_filter", Boolean, nullable=True, default=True),
+    Column("can_group_by", Boolean, nullable=True, default=False),
+    Column("materialized_from", DateTime(timezone=True), nullable=False),
+    Column("hidden", Boolean, nullable=True, default=False),
+    Column("dataset", String, nullable=False),
+
+    UniqueConstraint("column_name", "app_id", "datasource_id", name="uq_column_name_app_id_datasource_id"),
+)
+ForeignKeyConstraint(['datasource_id', 'app_id'], ['datasource.id', 'datasource.app_id'], table=user_history_materialized_column)
+
+
 def init_orm_mappers():
     mapper_registry.map_imperatively(
         Organization,
@@ -270,6 +308,7 @@ def init_orm_mappers():
         properties={
             "_app_id": datasource_table.c.app_id,
             "app_id": composite(AppId, datasource_table.c.app_id),
+            "materialized_columns": relationship(MaterializedColumn, lazy='joined'),
         },
     )
 
@@ -357,3 +396,14 @@ def init_orm_mappers():
             "app_id": composite(AppId, store_google_play_table.c.app_id),
         },
     )
+
+    mapper_registry.map_imperatively(
+        MaterializedColumn,
+        user_history_materialized_column,
+        properties={
+            "_app_id": user_history_materialized_column.c.app_id,
+            "app_id": composite(AppId, user_history_materialized_column.c.app_id),
+            "event": relationship(Event, uselist=False, lazy='joined'),
+        },
+    )
+

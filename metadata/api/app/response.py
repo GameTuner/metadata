@@ -1,9 +1,24 @@
+# Copyright (c) 2024 AlgebraAI All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from dataclasses import asdict, dataclass
 from datetime import date
 from typing import Dict, List
 from metadata.api.app.internal.domain import EventsByApp
 from metadata.core.domain.app import App, Datasource
 from metadata.core.domain.schema import Schema, SchemaParameter
+from metadata.core.domain.user_history import MaterializedColumn
 
 
 @dataclass(frozen=True)
@@ -85,19 +100,50 @@ class CommonConfigsDTO:
             embedded_context_schemas={e.get_schema().name: SchemaDTO.from_domain_model(e.get_schema(), e.get_alias(), e.get_schema().parameters) for e in events_by_app.embedded_event_contexts}
         )
 
+@dataclass(frozen=True)
+class MaterializedColumnDTO:
+    column_name: str
+    table_name: str
+    dataset: str
+    select_expression: str
+    data_type: str
+    user_history_formula: str | None = None
+    totals: bool | None = None
+    can_filter: bool | None = None
+    can_group_by: bool | None = None
+    materialized_from: date | None = None
+    hidden: bool | None = None
+
+    @classmethod
+    def from_domain_model(cls, materialized_column: MaterializedColumn) -> 'MaterializedColumnDTO':
+        return cls(
+            column_name=materialized_column.column_name,
+            table_name=materialized_column.event.schema.name,
+            dataset=materialized_column.dataset,
+            select_expression=materialized_column.select_expression,
+            data_type=materialized_column.data_type,
+            user_history_formula=materialized_column.user_history_formula,
+            totals=materialized_column.totals,
+            can_filter=materialized_column.can_filter,
+            can_group_by=materialized_column.can_group_by,
+            materialized_from=materialized_column.materialized_from,
+            hidden=materialized_column.hidden
+        )
 
 @dataclass(frozen=True)
 class DatasourceDTO:
     id: str
     has_data_from: date
     has_data_up_to: date | None
+    materialized_columns: List[MaterializedColumnDTO] | None
 
     @classmethod
     def from_domain_model(cls, datasource: Datasource) -> 'DatasourceDTO':
         return cls(
             id=datasource.id,
             has_data_from=datasource.has_data_from,
-            has_data_up_to=datasource.has_data_up_to
+            has_data_up_to=datasource.has_data_up_to,
+            materialized_columns=[MaterializedColumnDTO.from_domain_model(metric) for metric in datasource.materialized_columns]
         )
 
 @dataclass(frozen=True)

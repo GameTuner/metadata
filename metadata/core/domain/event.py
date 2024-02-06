@@ -1,9 +1,23 @@
+# Copyright (c) 2024 AlgebraAI All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 import dataclasses
 from datetime import datetime
 from typing import List, Set, Tuple
-from metadata.core.domain.app import App, AppId
+from metadata.core.domain.app import AppId
 from metadata.core.domain.common import BaseEntity
 from metadata.core.domain.iglu import IgluSchema
 from metadata.core.domain.schema import ParameterType, Schema, SchemaParameter
@@ -42,8 +56,8 @@ class CommonEvent(BaseEntity):
     def _identity(self) -> Tuple | None:
         return (self.id,)
 
-    def get_app_schema(self, app: App) -> Schema:
-        return Schema(parameters=[], vendor=app.event_vendor, name=self.schema.name,
+    def get_app_schema(self, event_vendor: str) -> Schema:
+        return Schema(parameters=[], vendor=event_vendor, name=self.schema.name,
                       description=self.schema.description)
 
 

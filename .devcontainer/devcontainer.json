@@ -1,5 +1,5 @@
 {
-	"name": "oss-gametuner-metadata",
+	"name": "gametuner-metadata",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "devcontainer",
 	"workspaceFolder": "/workspace",

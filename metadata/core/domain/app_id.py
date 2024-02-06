@@ -12,22 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
+from dataclasses import InitVar, dataclass, field
+from metadata.core.domain.common import BaseEntity, EntityError
 
-import google.cloud.logging
-from fastapi.logger import logger
-from google.cloud.logging_v2.handlers import CloudLoggingHandler
+@dataclass(frozen=True)
+class AppId:
+    value: str
 
-from metadata.logging.filter import GoogleCloudLogFilter
+    def __post_init__(self):
+        if not self.value:
+            raise EntityError('Must set app id')
+        if not all(c.islower() for c in self.value):
+            raise EntityError('App id must have all lowercase letters')
 
-
-def setup_logging():
-    client = google.cloud.logging.Client()
-    handler = CloudLoggingHandler(client, name="gametuner-metadata")
-    handler.setLevel(logging.DEBUG)
-    handler.filters = []
-    handler.addFilter(GoogleCloudLogFilter(project=client.project))
-    logger.handlers = []
-    logger.addHandler(handler)
-    logger.setLevel(logging.DEBUG)
-
+    def __composite_values__(self):
+        return (self.value,)

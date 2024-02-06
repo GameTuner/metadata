@@ -1,12 +1,13 @@
 substitutions:
   _SERVICE: gametuner-metadata
+  _ARTIFACT_REPOSITORY: gametuner-pipeline-services
 steps:
   - name: "gcr.io/cloud-builders/docker"
-    args: ["build", "-t", "gcr.io/$PROJECT_ID/$_SERVICE", "."]
+    args: ["build", "-t", "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REPOSITORY/$_SERVICE", "."]
 
   - name: "gcr.io/cloud-builders/docker"
     dir: "/workspace/dockerfile"
-    args: [ "push", "gcr.io/$PROJECT_ID/$_SERVICE" ]
+    args: [ "push", "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REPOSITORY/$_SERVICE" ]
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     args: [ "gcloud", "compute", "instance-groups", "managed", "rolling-action", "replace",
